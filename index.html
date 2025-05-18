@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Court & Fingerprint Date Calculator</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+      /* Additional styles for Operator Notes */
+      .operator-notes-container {
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        background-color: #f9f9f9;
+      }
+
+      .operator-notes-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #2c3e50;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+      }
+
+      .operator-notes-textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+        margin-bottom: 10px;
+        resize: vertical;
+      }
+
+      #save-notes-button {
+        padding: 8px 15px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      #save-notes-button:hover {
+        background-color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Court & Fingerprint Date Calculator</h1>
+
+      <div class="notes-container">
+        <div class="notes-title">Important Notes</div>
+        <div class="notes-content">
+          <!-- You can customize this text as needed -->
+          No current notes.
+          <!-- You can customize this text as needed -->
+        </div>
+      </div>
+
+      <div class="alert" id="alert-message"></div>
+
+      <div class="form-container">
+        <div class="form-group">
+          <label for="city">Court City:</label>
+          <select id="city">
+            <option value="choose">--Choose City--</option>
+            <option value="vancouver">Vancouver</option>
+            <option value="burnaby">Burnaby</option>
+            <option value="new-westminster">New Westminster</option>
+            <option value="surrey">
+              Surrey (Including Delta, Langley & White Rock)
+            </option>
+            <option value="richmond">Richmond</option>
+            <option value="coquitlam">
+              Coquitlam (Including Port Coquitlam, Port Moody, Pitt Meadows &
+              Maple Ridge)
+            </option>
+            <option value="north-vancouver">
+              North Vancouver (Including West Vancouver)
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="case-type">Case Type:</label>
+          <select id="case-type">
+            <option value="adult">Adult</option>
+            <option value="youth">Youth</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="initial-group">
+          <label for="initial">First Letter of Last Name:</label>
+          <input
+            type="text"
+            id="initial"
+            maxlength="1"
+            placeholder="Enter first letter"
+            oninput="this.value = this.value.toUpperCase()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="weeks">Weeks Out:</label>
+          <input type="number" id="weeks" min="1" max="52" value="6" />
+        </div>
+
+        <div class="form-group">
+          <label for="squad">Issuing Squad:</label>
+          <select id="squad">
+            <option value="A">A Squad</option>
+            <option value="B">B Squad</option>
+            <option value="C">C Squad</option>
+            <option value="D">D Squad</option>
+          </select>
+        </div>
+
+        <button onclick="calculateDates()">Calculate Dates</button>
+      </div>
+
+      <div class="results" id="results">
+        <h2>Results</h2>
+
+        <div class="results-grid">
+          <div class="result-card court-card">
+            <div class="info-title">Court Information</div>
+
+            <div class="info-item">
+              <div class="info-label">Date</div>
+              <div class="info-value" id="court-date"></div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Time</div>
+              <div class="info-value" id="court-time"></div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Address</div>
+              <div class="info-value" id="court-address"></div>
+            </div>
+
+            <div class="note" id="note-section" style="display: none">
+              <div class="info-value" id="court-note"></div>
+            </div>
+          </div>
+
+          <div class="result-card fingerprint-card">
+            <div class="info-title">Fingerprint Information</div>
+
+            <div class="info-item">
+              <div class="info-label">Date</div>
+              <div class="info-value" id="fingerprint-date"></div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Time</div>
+              <div class="info-value" id="fingerprint-time"></div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Location</div>
+              <div class="info-value" id="fingerprint-location"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="copy-section">
+          <h3>Copy/Paste Format</h3>
+          <div id="copy-content" class="copy-content"></div>
+          <button class="copy-btn" onclick="copySimpleText()">
+            Copy to Clipboard
+          </button>
+        </div>
+      </div>
+
+      <!-- Operator Notes Section -->
+      <div class="operator-notes-container">
+        <div class="operator-notes-title">Operator Notes</div>
+        <textarea
+          id="operator-notes-textarea"
+          class="operator-notes-textarea"
+          placeholder="Enter notes here for other operators (bugs, issues, special instructions, etc.)"
+        ></textarea>
+        <button id="save-notes-button">Save Notes</button>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">Last Update: 2025-05-18 / GV6272</div>
+    </div>
+
+    <!-- Load JavaScript Files -->
+    <script src="js/data.js"></script>
+    <script src="js/dates.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/tests.js"></script>
+  </body>
+</html>
