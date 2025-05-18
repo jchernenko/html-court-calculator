@@ -25,7 +25,7 @@ function isHoliday(date) {
  */
 function isWeekend(date) {
   const day = date.getDay();
-  return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+  return day === 0 || day === 6;
 }
 
 /**
@@ -74,27 +74,20 @@ function findClosestDate(targetWeeksOut, dateList) {
  * @returns {Object} Object with day and night squads
  */
 function getWorkingSquads(date) {
-  // Create a reference date - we know A/B were working on April 28, 2025
-  const referenceDate = new Date(2025, 3, 28); // April 28, 2025
-
-  // Calculate the number of days between reference date and given date
-  const oneDay = 24 * 60 * 60 * 1000; // milliseconds in a day
+  const referenceDate = new Date(2025, 3, 28);
+  const oneDay = 24 * 60 * 60 * 1000;
   const dayDifference = Math.round((date - referenceDate) / oneDay);
-  
-  // Ensure the result is positive by using modulo for negative differences
-  // This handles dates before the reference date correctly
   const adjustedDifference = ((dayDifference % 8) + 8) % 8;
 
-  // Determine the squad rotation cycle (8 days total in rotation)
   if (adjustedDifference < 4) {
     return {
-      day: "A", // A Squad works days
-      night: "B", // B Squad works nights
+      day: "A",
+      night: "B",
     };
   } else {
     return {
-      day: "C", // C Squad works days
-      night: "D", // D Squad works nights
+      day: "C",
+      night: "D", 
     };
   }
 }
@@ -108,25 +101,20 @@ function getWorkingSquads(date) {
 function findBestFingerprintDate(courtDate, issuingSquad) {
   const isNightSquad = issuingSquad === "B" || issuingSquad === "D";
 
-  // Only check 2-3 days before court date (reasonable window)
   const potentialDates = [];
 
-  // Check only 2 and 3 days before court date
   for (let i = 2; i <= 3; i++) {
     const testDate = new Date(courtDate);
     testDate.setDate(courtDate.getDate() - i);
 
-    // Skip weekends
     if (testDate.getDay() === 0 || testDate.getDay() === 6) {
       continue;
     }
 
-    // Skip holidays
     if (isHoliday(testDate)) {
       continue;
     }
 
-    // Skip Mondays and Fridays - ONLY allow Tuesdays (2), Wednesdays (3), Thursdays (4)
     const dayOfWeek = testDate.getDay();
     if (dayOfWeek !== 2 && dayOfWeek !== 3 && dayOfWeek !== 4) {
       continue;
@@ -134,7 +122,6 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
 
     const workingSquads = getWorkingSquads(testDate);
 
-    // Check if the issuing squad is working on this date
     let squadMatch = false;
     if (isNightSquad && workingSquads.night === issuingSquad) {
       squadMatch = true;
@@ -142,7 +129,6 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
       squadMatch = true;
     }
 
-    // Add the date to potential dates, marking if it's a squad match
     potentialDates.push({
       date: new Date(testDate),
       squadMatch: squadMatch,
@@ -150,17 +136,12 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
     });
   }
 
-  // First prioritize squad match within the 2-3 day window
   const squadMatches = potentialDates.filter((d) => d.squadMatch);
   if (squadMatches.length > 0) {
-    // If multiple squad matches, prefer dates closer to court date
     return squadMatches[0].date;
   }
 
-  // If no squad matches, default to 2 days before court if it's a Tue/Wed/Thu
-  // But ensure we're not picking a weekend or holiday
   if (potentialDates.length > 0) {
-    // Try to find a date 2 days before first (closest to court date)
     const twoDaysBefore = potentialDates.find((d) => {
       const dayDiff = Math.round(
         (courtDate - d.date) / (24 * 60 * 60 * 1000)
@@ -171,38 +152,26 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
     if (twoDaysBefore) {
       return twoDaysBefore.date;
     }
-
-    // Otherwise use any available date in the window
     return potentialDates[0].date;
   }
 
-  // Fallback logic for when no valid dates in the 2-3 day window
-  // Find the closest Tuesday, Wednesday or Thursday before the court date
   let defaultDate = new Date(courtDate);
-  defaultDate.setDate(courtDate.getDate() - 2); // Start with 2 days before
+  defaultDate.setDate(courtDate.getDate() - 2);
 
-  // If defaultDate is not a Tue/Wed/Thu, find the closest one
   const dayOfWeek = defaultDate.getDay();
   if (dayOfWeek !== 2 && dayOfWeek !== 3 && dayOfWeek !== 4) {
-    // Adjust to the nearest previous Tuesday, Wednesday, or Thursday
     if (dayOfWeek === 1) {
-      // Monday -> previous Thursday
       defaultDate.setDate(defaultDate.getDate() - 4);
     } else if (dayOfWeek === 5) {
-      // Friday -> previous Thursday
       defaultDate.setDate(defaultDate.getDate() - 1);
     } else if (dayOfWeek === 6) {
-      // Saturday -> previous Thursday
       defaultDate.setDate(defaultDate.getDate() - 2);
     } else if (dayOfWeek === 0) {
-      // Sunday -> previous Thursday
       defaultDate.setDate(defaultDate.getDate() - 3);
     }
   }
 
-  // Check if defaultDate is a holiday
   if (isHoliday(defaultDate)) {
-    // Try previous day if it's a valid fingerprint day
     const prevDay = new Date(defaultDate);
     prevDay.setDate(defaultDate.getDate() - 1);
 
@@ -215,7 +184,6 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
       return prevDay;
     }
 
-    // If previous day is not valid, try two days before
     const prevTwoDays = new Date(defaultDate);
     prevTwoDays.setDate(defaultDate.getDate() - 2);
 
@@ -239,5 +207,5 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
  */
 function isValidFingerprintDay(date) {
   const day = date.getDay();
-  return day >= 2 && day <= 4; // Tuesday(2), Wednesday(3), Thursday(4)
+  return day >= 2 && day <= 4;
 }

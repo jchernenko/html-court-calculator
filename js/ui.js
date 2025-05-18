@@ -11,8 +11,6 @@ function showAlert(message) {
     const alert = document.getElementById("alert-message");
     alert.textContent = message;
     alert.style.display = "block";
-  
-    // Hide after 5 seconds
     setTimeout(() => {
       alert.style.display = "none";
     }, 5000);
@@ -23,16 +21,12 @@ function showAlert(message) {
    */
   function copySimpleText() {
     const content = document.getElementById("copy-content").innerText;
-  
-    // Create a temporary element for copying
     const tempElement = document.createElement("textarea");
     tempElement.value = content;
     document.body.appendChild(tempElement);
     tempElement.select();
     document.execCommand("copy");
     document.body.removeChild(tempElement);
-  
-    // Show feedback
     const button = event.target;
     const originalText = button.textContent;
     button.textContent = "Copied!";
@@ -51,14 +45,11 @@ function showAlert(message) {
     const caseTypeSelect = document.getElementById("case-type");
     const caseTypeLabel = document.querySelector('label[for="case-type"]');
   
-    // For Richmond, don't disable the initial field for youth
     if (city === "richmond") {
-      // Richmond needs last name for rotating schedule regardless of case type
       initialField.disabled = false;
       initialField.classList.remove("disabled-field");
       initialField.placeholder = "Enter first letter";
   
-      // Add a note to the case type label if youth is selected
       if (caseType === "youth") {
         caseTypeLabel.innerHTML =
           'Case Type: <small style="font-weight:normal;color:#666;">(Richmond youth follow the same schedule as adults)</small>';
@@ -112,12 +103,9 @@ function showAlert(message) {
    * @param {Object} fingerprintDetails - Fingerprint details (time, location, squad info)
    */
   function displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDetails) {
-    // Display court information
     document.getElementById("court-date").textContent = formatDate(courtDate);
     document.getElementById("court-time").textContent = courtDetails.time;
     document.getElementById("court-address").textContent = courtDetails.address;
-  
-    // Add note if applicable
     const noteElement = document.getElementById("court-note");
     const noteSection = document.getElementById("note-section");
     if (noteElement && noteSection) {
@@ -129,40 +117,29 @@ function showAlert(message) {
       }
     }
   
-    // Display fingerprint information
     document.getElementById("fingerprint-date").textContent = formatDate(fingerprintDate);
     document.getElementById("fingerprint-time").textContent = fingerprintDetails.time;
     document.getElementById("fingerprint-location").textContent = fingerprintDetails.location;
-  
-    // Add squad information
     const fpLocationElement = document.getElementById("fingerprint-location");
     if (fpLocationElement) {
-      // Check if there's already a squad info note and remove it
       const existingNote = fpLocationElement.parentNode.querySelector(".note");
       if (existingNote) {
         fpLocationElement.parentNode.removeChild(existingNote);
       }
-  
-      // Add the new squad info note
+
       const fpInfoDiv = document.createElement("div");
       fpInfoDiv.className = fingerprintDetails.isMatchingSquad
         ? "note squad-note-match"
         : "note squad-note-mismatch";
       fpInfoDiv.style.marginTop = "15px";
   
-      // Create a div to hold the squad info content
       const squadInfoContent = document.createElement("div");
       squadInfoContent.className = "info-value";
       squadInfoContent.innerHTML = `<strong>Processing Squad:</strong> ${fingerprintDetails.squadInfo}`;
   
-      // Add the content div to the note
       fpInfoDiv.appendChild(squadInfoContent);
       fpLocationElement.parentNode.appendChild(fpInfoDiv);
     }
-  
-    // Create copyable text content
     document.getElementById("copy-content").innerText = fingerprintDetails.copyText;
-  
-    // Show results section
     document.getElementById("results").style.display = "block";
   }
