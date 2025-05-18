@@ -165,7 +165,6 @@ const holidays = [
     }
   };
   
-  // Fingerprint location data
   const fingerprintInfo = {
     location: "MVTP HQ: 300-287 Nelson's Court, New Westminster, BC V3L 0E7"
   };

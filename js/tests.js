@@ -3,12 +3,9 @@
  * Test button has been removed
  */
 
-// Remove the test button creation function
 function addMinimalTestButton() {
-  // This function is now empty - we no longer add the test button
 }
 
-// Initialize test framework when page loads - but don't add the button
+// Initialize test framework when page loads
 window.addEventListener("load", function () {
-  // Don't call addMinimalTestButton anymore
 });
