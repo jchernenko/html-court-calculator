@@ -1,6 +1,7 @@
 /**
  * main.js - Contains the main functionality
  * Fixed date calculation algorithm to properly select the closest appropriate weekday.
+ * Updated to use simplified single fingerprint result with day-based rules.
  */
 
 /**
@@ -112,24 +113,34 @@ function calculateDates() {
     const targetWeekday = courtDate.getDay();
     const dayDiff = courtWeekday - targetWeekday;
 
-    // FIXED ALGORITHM for more intuitive date selection:
-    // 1. If we're already on the right day, keep it
-    // 2. If we're 1-3 days away in either direction, pick the closest occurrence
-    // 3. If we're 4+ days away, pick the closest occurrence in the opposite direction
-
+    // IMPROVED ALGORITHM: Always pick the closest occurrence of the target weekday
     if (dayDiff === 0) {
-    } else if (dayDiff > 0 && dayDiff <= 3) {
-      // 1-3 days forward, use the next occurrence
-      courtDate.setDate(courtDate.getDate() + dayDiff);
-    } else if (dayDiff < 0 && dayDiff >= -3) {
-      // 1-3 days backward, use the previous occurrence
-      courtDate.setDate(courtDate.getDate() + dayDiff);
-    } else if (dayDiff > 0) {
-      // 4+ days forward, prefer the previous occurrence
-      courtDate.setDate(courtDate.getDate() + (dayDiff - 7));
+      // Already on the right day, keep it
     } else {
-      // 4+ days backward, prefer the next occurrence
-      courtDate.setDate(courtDate.getDate() + (dayDiff + 7));
+      // Calculate both possible dates (previous and next occurrence)
+      const nextOccurrence = new Date(courtDate);
+      const prevOccurrence = new Date(courtDate);
+      
+      if (dayDiff > 0) {
+        // Target day is later in the week
+        nextOccurrence.setDate(courtDate.getDate() + dayDiff);
+        prevOccurrence.setDate(courtDate.getDate() + (dayDiff - 7));
+      } else {
+        // Target day is earlier in the week  
+        nextOccurrence.setDate(courtDate.getDate() + (dayDiff + 7));
+        prevOccurrence.setDate(courtDate.getDate() + dayDiff);
+      }
+      
+      // Pick whichever is closer to the original target date
+      const targetDate = new Date(courtDate);
+      const nextDiff = Math.abs(nextOccurrence - targetDate);
+      const prevDiff = Math.abs(prevOccurrence - targetDate);
+      
+      if (nextDiff < prevDiff) {
+        courtDate = nextOccurrence;
+      } else {
+        courtDate = prevOccurrence;
+      }
     }
 
     // Check if the court date lands on a holiday
@@ -148,15 +159,48 @@ function calculateDates() {
     return;
   }
 
+  // Get single optimal fingerprint date
   const fingerprintDate = findBestFingerprintDate(courtDate, squad);
   const workingSquads = getWorkingSquads(fingerprintDate);
   const isIssuingDaySquad = squad === "A" || squad === "C";
   const fingerprintTime = isIssuingDaySquad ? "0900hrs" : "1800hrs";
   const fingerprintSquad = isIssuingDaySquad ? workingSquads.day : workingSquads.night;
   const isMatchingSquad = fingerprintSquad === squad;
-  const squadInfo = isMatchingSquad
-    ? `${fingerprintSquad} Squad (issuing squad)`
-    : `${fingerprintSquad} Squad (not issuing squad)`;
+  
+  // Determine why this date was chosen
+  const courtDayOfWeek = courtDate.getDay();
+  const fpDayOfWeek = fingerprintDate.getDay();
+  let reasonText = "";
+  
+  if ((courtDayOfWeek === 1 || courtDayOfWeek === 2) && fpDayOfWeek === 4) {
+    reasonText = "Optimal for Monday/Tuesday court dates";
+  } else if (courtDayOfWeek === 3 && fpDayOfWeek === 2) {
+    reasonText = "Optimal for Wednesday court dates";
+  } else if (courtDayOfWeek === 4 && fpDayOfWeek === 2) {
+    reasonText = "Optimal for Thursday court dates";
+  } else if (courtDayOfWeek === 5 && fpDayOfWeek === 3) {
+    reasonText = "Optimal for Friday court dates";
+  } else {
+    reasonText = "Best available option";
+  }
+  
+  // Check if fingerprint date is a holiday
+  const fpIsHoliday = isHoliday(fingerprintDate);
+  
+  // Build squad info with holiday warning if applicable
+  let squadInfo = `${fingerprintSquad} Squad`;
+  if (isMatchingSquad) {
+    squadInfo += ` (issuing squad)`;
+  }
+
+  // Add holiday warning if applicable
+  if (fpIsHoliday) {
+    squadInfo += ` - ⚠️ HOLIDAY`;
+  }
+
+  // Calculate days before court for display
+  const daysBefore = Math.round((courtDate - fingerprintDate) / (24 * 60 * 60 * 1000));
+  const daysBeforeText = daysBefore === 1 ? "1 day" : `${daysBefore} days`;
 
   let courtDetails = {
     time: "",
@@ -246,7 +290,6 @@ function calculateDates() {
         note: "This court covers North Vancouver and West Vancouver."
       };
     } else {
-
       courtDetails = {
         time: "0900hrs",
         address: `${city.charAt(0).toUpperCase() + city.slice(1)} Provincial Court`,
@@ -297,11 +340,18 @@ function calculateDates() {
   
   copyText += ` // Fingerprint date: ${fpDay} ${fpMonth} ${fpDayNum} ${fpYear} at ${fingerprintTime} - ${fingerprintInfo.location}`;
 
+  // Add holiday note to copy text if applicable
+  if (fpIsHoliday) {
+    copyText += ` (HOLIDAY DATE - verify availability)`;
+  }
+
   const fingerprintDetails = {
     time: fingerprintTime,
     location: fingerprintInfo.location,
-    squadInfo: squadInfo, 
-    isMatchingSquad: isMatchingSquad, 
+    squadInfo: squadInfo,
+    isMatchingSquad: isMatchingSquad,
+    isHoliday: fpIsHoliday,
+    daysBefore: daysBeforeText,
     copyText: copyText
   };
 
