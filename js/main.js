@@ -2,6 +2,7 @@
  * main.js - Contains the main functionality
  * Fixed date calculation algorithm to properly select the closest appropriate weekday.
  * Updated to use simplified single fingerprint result with day-based rules.
+ * Updated court information per Excel sheet specifications.
  */
 
 /**
@@ -99,11 +100,8 @@ function calculateDates() {
         courtWeekday = targetDay;
       }
     } else if (city === "north-vancouver") {
-      if (caseType === "youth") {
-        courtWeekday = 1;
-      } else {
-        courtWeekday = 3;
-      }
+      // Both adult and youth cases are on Wednesday per Excel sheet
+      courtWeekday = 3;
     }
 
     const today = new Date();
@@ -172,10 +170,8 @@ function calculateDates() {
   const fpDayOfWeek = fingerprintDate.getDay();
   let reasonText = "";
   
-  if ((courtDayOfWeek === 1 || courtDayOfWeek === 2) && fpDayOfWeek === 4) {
-    reasonText = "Optimal for Monday/Tuesday court dates";
-  } else if (courtDayOfWeek === 3 && fpDayOfWeek === 2) {
-    reasonText = "Optimal for Wednesday court dates";
+  if ((courtDayOfWeek === 1 || courtDayOfWeek === 2 || courtDayOfWeek === 3) && fpDayOfWeek === 4) {
+    reasonText = "Optimal for Monday/Tuesday/Wednesday court dates";
   } else if (courtDayOfWeek === 4 && fpDayOfWeek === 2) {
     reasonText = "Optimal for Thursday court dates";
   } else if (courtDayOfWeek === 5 && fpDayOfWeek === 3) {
@@ -211,7 +207,7 @@ function calculateDates() {
   if (city === "richmond") {
     courtDetails = {
       time: "0900hrs",
-      address: "Richmond Provincial Court: 7577 Elmbridge Way, Richmond, BC V6X 4J2",
+      address: "Richmond Provincial Court: Court Room 104 - 7577 Elmbridge Way, Richmond, BC V6X 4J2",
       note: ""
     };
 
@@ -232,62 +228,55 @@ function calculateDates() {
     if (city === "vancouver" && caseType === "adult") {
       courtDetails = {
         time: "1400hrs",
-        address: "Vancouver Provincial Court: Courtroom 307 - 222 Main Street, Vancouver, BC V6A 2S8",
+        address: "Vancouver Provincial Court: Court Room 307 - 222 Main Street, Vancouver, BC V6A 2S8",
         note: "This court covers Vancouver and Burnaby."
       };
     } else if (city === "vancouver" && caseType === "youth") {
       courtDetails = {
         time: "0930hrs",
-        address: "Vancouver Provincial Court: Courtroom 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
+        address: "Vancouver Provincial Court: Court Room 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
         note: "This court covers Vancouver and Burnaby."
       };
     } else if (city === "burnaby" && caseType === "adult") {
       courtDetails = {
-        time: "1330hrs",
-        address: "Vancouver Provincial Court: Courtroom 307 - 222 Main Street, Vancouver, BC V6A 2S8",
+        time: "1400hrs", // Updated from 1330hrs per Excel sheet
+        address: "Vancouver Provincial Court: Court Room 307 - 222 Main Street, Vancouver, BC V6A 2S8",
         note: "This court covers Vancouver and Burnaby."
       };
     } else if (city === "burnaby" && caseType === "youth") {
       courtDetails = {
         time: "0930hrs",
-        address: "Vancouver Provincial Court: Courtroom 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
+        address: "Vancouver Provincial Court: Court Room 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
         note: "This court covers Vancouver and Burnaby."
       };
     } else if (city === "surrey" && caseType === "adult") {
       courtDetails = {
-        time: "0900hrs",
-        address: "Surrey Provincial Court: Courtroom 100 - 14340 57th Ave, Surrey, BC V3X 1B2",
+        time: "1400hrs", // Updated from 0900hrs per Excel sheet
+        address: "Surrey Provincial Court: Court Room 100 - 14340 57th Ave, Surrey, BC V3X 1B2",
         note: "This court covers Surrey, Delta, Langley & White Rock."
       };
     } else if (city === "surrey" && caseType === "youth") {
       courtDetails = {
-        time: "0930hrs",
-        address: "Surrey Provincial Court: Courtroom 312 - 14340 57th Ave, Surrey, BC V3X 1B2",
+        time: "1400hrs", // Updated from 0930hrs per Excel sheet
+        address: "Surrey Provincial Court: Court Room 312 - 14340 57th Ave, Surrey, BC V3X 1B2",
         note: "This court covers Surrey, Delta, Langley & White Rock."
       };
     } else if (city === "new-westminster") {
       courtDetails = {
-        time: "0900hrs",
-        address: "New Westminster Law Courts: 651 Carnarvon Street, New Westminster, BC V3M 1C9",
-        note: "Client needs to check docket for court room number."
+        time: "1000hrs", // Updated from 0900hrs per Excel sheet
+        address: "New Westminster Law Courts: Court Room 213 - 651 Carnarvon Street, New Westminster, BC V3M 1C9",
       };
     } else if (city === "coquitlam") {
       courtDetails = {
-        time: "1400hrs",
-        address: "Port Coquitlam Provincial Court: 2620 Mary Hill Rd, Port Coquitlam, BC V3C 3B2",
+        time: "0900hrs", // Updated from 1400hrs per Excel sheet
+        address: "Port Coquitlam Provincial Court: Court Room 3 - 2620 Mary Hill Rd, Port Coquitlam, BC V3C 3B2",
         note: "This court covers Coquitlam, Port Coquitlam, Port Moody, Pitt Meadows & Maple Ridge."
       };
-    } else if (city === "north-vancouver" && caseType === "adult") {
+    } else if (city === "north-vancouver") {
       courtDetails = {
         time: "0900hrs",
-        address: "North Vancouver Provincial Court: Courtroom 2 - 200 East 23rd Ave, North Vancouver, BC V7L 4R4",
-        note: "This court covers North Vancouver and West Vancouver."
-      };
-    } else if (city === "north-vancouver" && caseType === "youth") {
-      courtDetails = {
-        time: "0930hrs",
-        address: "North Vancouver Provincial Court: Courtroom 2 - 200 East 23rd Ave, North Vancouver, BC V7L 4R4",
-        note: "This court covers North Vancouver and West Vancouver."
+        address: "North Vancouver Provincial Court: Court Room 3 - 200 E 23rd Street, North Vancouver, BC V7L 4R4",
+        note: "This court covers North Vancouver, West Vancouver, Squamish & Whistler."
       };
     } else {
       courtDetails = {
@@ -334,10 +323,6 @@ function calculateDates() {
 
   let copyText = `Court date: ${courtDay} ${courtMonth} ${courtDayNum} ${courtYear} at ${courtDetails.time} - ${courtDetails.address}`;
   
-  if (city === "new-westminster") {
-    copyText += ` (Client needs to check docket for court room number.)`;
-  }
-  
   copyText += ` // Fingerprint date: ${fpDay} ${fpMonth} ${fpDayNum} ${fpYear} at ${fingerprintTime} - ${fingerprintInfo.location}`;
 
   // Add holiday note to copy text if applicable
@@ -349,6 +334,7 @@ function calculateDates() {
     time: fingerprintTime,
     location: fingerprintInfo.location,
     squadInfo: squadInfo,
+    reasonText: reasonText,
     isMatchingSquad: isMatchingSquad,
     isHoliday: fpIsHoliday,
     daysBefore: daysBeforeText,

@@ -93,12 +93,6 @@ function getWorkingSquads(date) {
 }
 
 /**
- * Find the best fingerprint dates based on squad and court date
- * @param {Date} courtDate - Court date
- * @param {string} issuingSquad - Issuing squad (A, B, C, or D)
- * @returns {Array} Array of fingerprint date options with priority rankings
- */
-/**
  * Find the best fingerprint dates based on court day and simple day-based rules
  * @param {Date} courtDate - Court date
  * @param {string} issuingSquad - Issuing squad (A, B, C, or D)
@@ -108,16 +102,14 @@ function findBestFingerprintDates(courtDate, issuingSquad) {
   const isNightSquad = issuingSquad === "B" || issuingSquad === "D";
   const courtDayOfWeek = courtDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
   
-  // Determine optimal fingerprint day based on court day
+  // Determine optimal fingerprint day based on court day (at least 2 days before)
   let optimalFingerprintDay;
-  if (courtDayOfWeek === 1 || courtDayOfWeek === 2) { // Monday or Tuesday
+  if (courtDayOfWeek === 1 || courtDayOfWeek === 2 || courtDayOfWeek === 3) { // Monday, Tuesday, or Wednesday
     optimalFingerprintDay = 4; // Thursday before
-  } else if (courtDayOfWeek === 3) { // Wednesday
-    optimalFingerprintDay = 2; // Tuesday before
   } else if (courtDayOfWeek === 4) { // Thursday
-    optimalFingerprintDay = 2; // Tuesday before
+    optimalFingerprintDay = 2; // Tuesday before (2 days)
   } else if (courtDayOfWeek === 5) { // Friday
-    optimalFingerprintDay = 3; // Wednesday before
+    optimalFingerprintDay = 3; // Wednesday before (2 days)
   } else {
     // Weekend court dates (shouldn't happen, but fallback to Thursday)
     optimalFingerprintDay = 4;

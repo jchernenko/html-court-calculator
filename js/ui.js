@@ -1,7 +1,7 @@
 /**
  * ui.js - Contains UI-related functions
  * This file handles UI interactions, alerts, and display functions.
- * Updated to support multiple fingerprint options display.
+ * Updated to use single fingerprint result with consistent neutral styling.
  */
 
 /**
@@ -152,15 +152,6 @@ function displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDet
     squadInfoContent.className = "info-value";
     squadInfoContent.innerHTML = `<strong>Squad Working:</strong> ${fingerprintDetails.squadInfo}`;
     fpInfoDiv.appendChild(squadInfoContent);
-
-    // // Days before court information
-    // if (fingerprintDetails.daysBefore) {
-    //   const daysBeforeContent = document.createElement("div");
-    //   daysBeforeContent.className = "info-value";
-    //   daysBeforeContent.style.marginTop = "5px";
-    //   daysBeforeContent.innerHTML = `<strong>Timing:</strong> ${fingerprintDetails.daysBefore} before court date`;
-    //   fpInfoDiv.appendChild(daysBeforeContent);
-    // }
 
     // Holiday warning if applicable
     if (fingerprintDetails.isHoliday) {
