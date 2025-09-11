@@ -2,6 +2,7 @@
   --primary-color: #3498db;
   --primary-dark: #2980b9;
   --secondary-color: #f39c12;
+  --secondary-color2: #700c92;
   --success-color: #2ecc71;
   --text-color: #2c3e50;
   --light-text: #7f8c8d;
@@ -253,36 +254,15 @@ h2::before {
   background-color: rgba(243, 156, 18, 0.1);
   border-radius: 6px;
   border-left: 3px solid var(--secondary-color);
-  font-size: 14px; /* Ensure consistent font size */
-  line-height: 1.4; /* Consistent line height */
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .note .info-value,
 .note strong {
-  font-size: 14px; /* Match the font size */
+  font-size: 14px;
   line-height: 1.4;
   color: var(--text-color);
-}
-
-/* Squad information note colors */
-.squad-note-match {
-  background-color: rgba(
-    46,
-    204,
-    113,
-    0.1
-  ) !important; /* Light green background */
-  border-left: 3px solid #2ecc71 !important; /* Green border */
-}
-
-.squad-note-mismatch {
-  background-color: rgba(
-    231,
-    76,
-    60,
-    0.1
-  ) !important; /* Light red background */
-  border-left: 3px solid #e74c3c !important; /* Red border */
 }
 
 .copy-section {
@@ -291,7 +271,7 @@ h2::before {
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   margin-top: 20px;
-  border-left: 4px solid var(--secondary-color);
+  border-left: 4px solid var(--secondary-color2);
 }
 
 .copy-section h3 {
@@ -313,7 +293,7 @@ h2::before {
 }
 
 .copy-btn {
-  background-color: var(--secondary-color);
+  background-color: var(--secondary-color2);
   color: white;
   border: none;
   border-radius: 8px;
@@ -327,7 +307,7 @@ h2::before {
 }
 
 .copy-btn:hover {
-  background-color: #e67e22;
+  background-color: #9122e6;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -400,46 +380,4 @@ h2::before {
 
 .fingerprint-card .info-item:last-child {
   margin-bottom: 0;
-}
-
-/* Operator Notes Styling */
-.operator-notes-container {
-  margin-top: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 15px;
-  background-color: #f9f9f9;
-}
-
-.operator-notes-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #2c3e50;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 5px;
-}
-
-.operator-notes-textarea {
-  width: 100%;
-  min-height: 100px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: Arial, sans-serif;
-  margin-bottom: 10px;
-  resize: vertical;
-}
-
-#save-notes-button {
-  padding: 8px 15px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-#save-notes-button:hover {
-  background-color: #2980b9;
 }

@@ -1,7 +1,7 @@
 /**
  * ui.js - Contains UI-related functions
  * This file handles UI interactions, alerts, and display functions.
- * Updated to use single fingerprint result with consistent neutral styling.
+ * Updated to work with refactored centralized data structure.
  */
 
 /**
@@ -43,55 +43,48 @@ function toggleInitialField() {
   const caseType = document.getElementById("case-type").value;
   const city = document.getElementById("city").value;
   const initialField = document.getElementById("initial");
-  const caseTypeSelect = document.getElementById("case-type");
   const caseTypeLabel = document.querySelector('label[for="case-type"]');
 
-  if (city === "richmond") {
+  // Check if court configuration exists and requires initial
+  let requiresInitial = false;
+  let placeholderText = "Not required";
+  
+  if (city !== "choose" && courtInfo[city] && courtInfo[city][caseType]) {
+    const courtConfig = courtInfo[city][caseType];
+    requiresInitial = (courtConfig.dayType === "surname" || courtConfig.dayType === "calendar");
+  }
+
+  if (requiresInitial) {
     initialField.disabled = false;
     initialField.classList.remove("disabled-field");
     initialField.placeholder = "Enter first letter";
 
-    if (caseType === "youth") {
+    // Special case for Richmond youth
+    if (city === "richmond" && caseType === "youth") {
       caseTypeLabel.innerHTML =
         'Case Type: <small style="font-weight:normal;color:#666;">(Richmond youth follow the same schedule as adults)</small>';
     } else {
       caseTypeLabel.innerHTML = "Case Type:";
     }
-  } else if (
-    caseType === "youth" ||
-    city === "new-westminster" ||
-    city === "coquitlam" ||
-    city === "north-vancouver"
-  ) {
-    initialField.disabled = true;
-    initialField.classList.add("disabled-field");
-    let placeholder = "Not required";
-    if (
-      caseType === "youth" &&
-      city !== "coquitlam" &&
-      city !== "north-vancouver"
-    ) {
-      placeholder = "Not required for Youth";
-    } else if (city === "new-westminster") {
-      placeholder = "Not required for New Westminster";
-    } else if (city === "coquitlam") {
-      placeholder = "Not required for Coquitlam";
-    } else if (city === "north-vancouver") {
-      placeholder = "Not required for North Vancouver";
-    }
-    initialField.placeholder = placeholder;
-    initialField.value = "";
-    caseTypeLabel.innerHTML = "Case Type:";
-  } else if (caseType === "youth" && city === "surrey") {
-    initialField.disabled = true;
-    initialField.classList.add("disabled-field");
-    initialField.placeholder = "Not required for Youth";
-    initialField.value = "";
-    caseTypeLabel.innerHTML = "Case Type:";
   } else {
-    initialField.disabled = false;
-    initialField.classList.remove("disabled-field");
-    initialField.placeholder = "Enter first letter";
+    initialField.disabled = true;
+    initialField.classList.add("disabled-field");
+    
+    // Set appropriate placeholder text
+    if (caseType === "youth" && city !== "richmond") {
+      placeholderText = "Not required for Youth";
+    } else if (city === "new-westminster") {
+      placeholderText = "Not required for New Westminster";
+    } else if (city === "coquitlam") {
+      placeholderText = "Not required for Coquitlam";
+    } else if (city === "north-vancouver") {
+      placeholderText = "Not required for North Vancouver";
+    } else if (city === "surrey") {
+      placeholderText = "Not required for Surrey";
+    }
+    
+    initialField.placeholder = placeholderText;
+    initialField.value = "";
     caseTypeLabel.innerHTML = "Case Type:";
   }
 }
@@ -101,7 +94,7 @@ function toggleInitialField() {
  * @param {Date} courtDate - Court date
  * @param {Date} fingerprintDate - Fingerprint date
  * @param {Object} courtDetails - Court details (time, address, note)
- * @param {Object} fingerprintDetails - Fingerprint details (time, location, squad info)
+ * @param {Object} fingerprintDetails - Fingerprint details (time, location, etc.)
  */
 function displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDetails) {
   // Display court information
@@ -109,15 +102,10 @@ function displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDet
   document.getElementById("court-time").textContent = courtDetails.time;
   document.getElementById("court-address").textContent = courtDetails.address;
   
-  const noteElement = document.getElementById("court-note");
+  // Hide court notes section
   const noteSection = document.getElementById("note-section");
-  if (noteElement && noteSection) {
-    if (courtDetails.note) {
-      noteElement.textContent = courtDetails.note;
-      noteSection.style.display = "block";
-    } else {
-      noteSection.style.display = "none";
-    }
+  if (noteSection) {
+    noteSection.style.display = "none";
   }
 
   // Display fingerprint information
@@ -125,46 +113,13 @@ function displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDet
   document.getElementById("fingerprint-time").textContent = fingerprintDetails.time;
   document.getElementById("fingerprint-location").textContent = fingerprintDetails.location;
   
+  // Remove any existing fingerprint notes
   const fpLocationElement = document.getElementById("fingerprint-location");
   if (fpLocationElement) {
-    // Remove any existing notes
     const existingNote = fpLocationElement.parentNode.querySelector(".note");
     if (existingNote) {
       fpLocationElement.parentNode.removeChild(existingNote);
     }
-
-    // Create the fingerprint info section
-    const fpInfoDiv = document.createElement("div");
-    fpInfoDiv.className = "note"; // Use consistent neutral styling
-    fpInfoDiv.style.marginTop = "15px";
-
-    // Selection reason
-    if (fingerprintDetails.reasonText) {
-      const reasonContent = document.createElement("div");
-      reasonContent.className = "info-value";
-      reasonContent.style.marginBottom = "8px";
-      reasonContent.innerHTML = `<strong>Selection:</strong> ${fingerprintDetails.reasonText}`;
-      fpInfoDiv.appendChild(reasonContent);
-    }
-
-    // Squad information
-    const squadInfoContent = document.createElement("div");
-    squadInfoContent.className = "info-value";
-    squadInfoContent.innerHTML = `<strong>Squad Working:</strong> ${fingerprintDetails.squadInfo}`;
-    fpInfoDiv.appendChild(squadInfoContent);
-
-    // Holiday warning if applicable
-    if (fingerprintDetails.isHoliday) {
-      const holidayWarning = document.createElement("div");
-      holidayWarning.className = "info-value";
-      holidayWarning.style.marginTop = "8px";
-      holidayWarning.style.color = "#e74c3c";
-      holidayWarning.style.fontWeight = "bold";
-      holidayWarning.innerHTML = `⚠️ <strong>HOLIDAY DATE:</strong> Verify office availability`;
-      fpInfoDiv.appendChild(holidayWarning);
-    }
-
-    fpLocationElement.parentNode.appendChild(fpInfoDiv);
   }
   
   // Update copy content

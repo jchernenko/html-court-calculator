@@ -1,8 +1,7 @@
 /**
  * main.js - Contains the main functionality
- * Fixed date calculation algorithm to properly select the closest appropriate weekday.
- * Updated to use simplified single fingerprint result with day-based rules.
- * Updated court information per Excel sheet specifications.
+ * Refactored to use centralized court data and simplified logic.
+ * Updated Surrey logic to allow any Monday-Friday scheduling.
  */
 
 /**
@@ -15,23 +14,7 @@ function calculateDates() {
   const squad = document.getElementById("squad").value;
   const caseType = document.getElementById("case-type").value;
 
-  if (
-    caseType === "adult" &&
-    city !== "new-westminster" &&
-    city !== "richmond" &&
-    city !== "coquitlam" &&
-    city !== "north-vancouver" &&
-    !initial
-  ) {
-    showAlert("Please enter the first letter of the last name.");
-    return;
-  }
-
-  if (city === "richmond" && !initial) {
-    showAlert("Please enter the first letter of the last name.");
-    return;
-  }
-
+  // Validation
   if (city === "choose") {
     showAlert("Please select a court city.");
     return;
@@ -42,306 +25,190 @@ function calculateDates() {
     return;
   }
 
-  let courtDate;
-  
-  if (city === "richmond") {
-    const nameGroup = /^[A-K]$/i.test(initial) ? "A-K" : "L-Z";
-    courtDate = findClosestDate(weeksOut, richmondCourtDates[nameGroup]);
-  }
-  else {
-    let courtWeekday;
-    const youthCase = caseType === "youth";
-
-    if (city === "new-westminster") {
-      courtWeekday = 3;
-    } else if (city === "surrey" && youthCase) {
-      courtWeekday = 3;
-    } else if (city === "surrey") {
-      if (/^[A-C]$/.test(initial)) {
-        courtWeekday = 1;
-      } else if (/^[D-H]$/.test(initial)) {
-        courtWeekday = 2;
-      } else if (/^[I-L]$/.test(initial)) {
-        courtWeekday = 3;
-      } else if (/^[M-R]$/.test(initial)) {
-        courtWeekday = 4;
-      } else if (/^[S-Z]$/.test(initial)) {
-        courtWeekday = 5;
-      } else {
-        showAlert("Please enter a valid letter (A-Z).");
-        return;
-      }
-    } else if ((city === "vancouver" || city === "burnaby") && youthCase) {
-      courtWeekday = 4;
-    } else if (city === "vancouver" || city === "burnaby") {
-      if (/^[A-F]$/.test(initial)) {
-        courtWeekday = 1;
-      } else if (/^[G-L]$/.test(initial)) {
-        courtWeekday = 2;
-      } else if (/^[M-R]$/.test(initial)) {
-        courtWeekday = 3;
-      } else if (/^[S-Z]$/.test(initial)) {
-        courtWeekday = 4;
-      } else {
-        showAlert("Please enter a valid letter (A-Z).");
-        return;
-      }
-    } else if (city === "coquitlam") {
-      const today = new Date();
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + weeksOut * 7);
-
-      const targetDay = targetDate.getDay();
-      if (targetDay === 0) {
-        courtWeekday = 1;
-      } else if (targetDay === 6) {
-        courtWeekday = 1;
-      } else {
-        courtWeekday = targetDay;
-      }
-    } else if (city === "north-vancouver") {
-      // Both adult and youth cases are on Wednesday per Excel sheet
-      courtWeekday = 3;
-    }
-
-    const today = new Date();
-    courtDate = new Date(today);
-    courtDate.setDate(today.getDate() + weeksOut * 7);
-
-    const targetWeekday = courtDate.getDay();
-    const dayDiff = courtWeekday - targetWeekday;
-
-    // IMPROVED ALGORITHM: Always pick the closest occurrence of the target weekday
-    if (dayDiff === 0) {
-      // Already on the right day, keep it
-    } else {
-      // Calculate both possible dates (previous and next occurrence)
-      const nextOccurrence = new Date(courtDate);
-      const prevOccurrence = new Date(courtDate);
-      
-      if (dayDiff > 0) {
-        // Target day is later in the week
-        nextOccurrence.setDate(courtDate.getDate() + dayDiff);
-        prevOccurrence.setDate(courtDate.getDate() + (dayDiff - 7));
-      } else {
-        // Target day is earlier in the week  
-        nextOccurrence.setDate(courtDate.getDate() + (dayDiff + 7));
-        prevOccurrence.setDate(courtDate.getDate() + dayDiff);
-      }
-      
-      // Pick whichever is closer to the original target date
-      const targetDate = new Date(courtDate);
-      const nextDiff = Math.abs(nextOccurrence - targetDate);
-      const prevDiff = Math.abs(prevOccurrence - targetDate);
-      
-      if (nextDiff < prevDiff) {
-        courtDate = nextOccurrence;
-      } else {
-        courtDate = prevOccurrence;
-      }
-    }
-
-    // Check if the court date lands on a holiday
-    if (isHoliday(courtDate)) {
-      courtDate.setDate(courtDate.getDate() + 7);
-      while (isHoliday(courtDate)) {
-        courtDate.setDate(courtDate.getDate() + 7);
-      }
-    }
-  }
-
-  if (!courtDate || isNaN(courtDate.getTime())) {
-    showAlert(
-      "Error: Invalid date calculated. Please try different parameters."
-    );
+  // Get court configuration
+  const courtConfig = courtInfo[city][caseType];
+  if (!courtConfig) {
+    showAlert("Invalid city or case type configuration.");
     return;
   }
 
-  // Get single optimal fingerprint date
-  const fingerprintDate = findBestFingerprintDate(courtDate, squad);
-  const workingSquads = getWorkingSquads(fingerprintDate);
-  const isIssuingDaySquad = squad === "A" || squad === "C";
-  const fingerprintTime = isIssuingDaySquad ? "0900hrs" : "1800hrs";
-  const fingerprintSquad = isIssuingDaySquad ? workingSquads.day : workingSquads.night;
-  const isMatchingSquad = fingerprintSquad === squad;
-  
-  // Determine why this date was chosen
-  const courtDayOfWeek = courtDate.getDay();
-  const fpDayOfWeek = fingerprintDate.getDay();
-  let reasonText = "";
-  
-  if ((courtDayOfWeek === 1 || courtDayOfWeek === 2 || courtDayOfWeek === 3) && fpDayOfWeek === 4) {
-    reasonText = "Optimal for Monday/Tuesday/Wednesday court dates";
-  } else if (courtDayOfWeek === 4 && fpDayOfWeek === 2) {
-    reasonText = "Optimal for Thursday court dates";
-  } else if (courtDayOfWeek === 5 && fpDayOfWeek === 3) {
-    reasonText = "Optimal for Friday court dates";
-  } else {
-    reasonText = "Best available option";
-  }
-  
-  // Check if fingerprint date is a holiday
-  const fpIsHoliday = isHoliday(fingerprintDate);
-  
-  // Build squad info with holiday warning if applicable
-  let squadInfo = `${fingerprintSquad} Squad`;
-  if (isMatchingSquad) {
-    squadInfo += ` (issuing squad)`;
+  // Check if initial is required
+  if (courtConfig.dayType === "surname" || courtConfig.dayType === "calendar") {
+    if (!initial) {
+      showAlert("Please enter the first letter of the last name.");
+      return;
+    }
   }
 
-  // Add holiday warning if applicable
-  if (fpIsHoliday) {
-    squadInfo += ` - ⚠️ HOLIDAY`;
+  // Calculate court date based on court type
+  let courtDate = calculateCourtDate(city, caseType, initial, weeksOut, courtConfig);
+
+  if (!courtDate || isNaN(courtDate.getTime())) {
+    showAlert("Error: Invalid date calculated. Please try different parameters.");
+    return;
   }
 
-  // Calculate days before court for display
-  const daysBefore = Math.round((courtDate - fingerprintDate) / (24 * 60 * 60 * 1000));
-  const daysBeforeText = daysBefore === 1 ? "1 day" : `${daysBefore} days`;
+  // Calculate fingerprint date using simplified logic
+  const fingerprintResult = calculateFingerprintDate(courtDate, squad);
 
+  // Prepare court details
   let courtDetails = {
-    time: "",
-    address: "",
-    note: ""
+    time: courtConfig.time,
+    address: courtConfig.address,
+    note: courtConfig.note || ""
   };
 
+  // Add specific notes for Richmond
   if (city === "richmond") {
-    courtDetails = {
-      time: "0900hrs",
-      address: "Richmond Provincial Court: Court Room 104 - 7577 Elmbridge Way, Richmond, BC V6X 4J2",
-      note: ""
-    };
-
+    const nameGroup = /^[A-K]$/i.test(initial) ? "A-K" : "L-Z";
     const isAKDate = richmondCourtDates["A-K"].some(
       (date) =>
         date.getDate() === courtDate.getDate() &&
         date.getMonth() === courtDate.getMonth() &&
         date.getFullYear() === courtDate.getFullYear()
     );
-
     const rotation = isAKDate ? "A-K" : "L-Z";
-    courtDetails.note = `This date is for last names ${rotation}.`;
-
+    
+    // Combine the calendar link with rotation info
+    let richmondNote = courtConfig.note; // Get the note with calendar link from data.js
+    richmondNote += `This date is for last names ${rotation}.`;
+    
     if (caseType === "youth") {
-      courtDetails.note += " Youth attend the same court.";
+      richmondNote += " Youth attend the same court.";
     }
-  } else {
-    if (city === "vancouver" && caseType === "adult") {
-      courtDetails = {
-        time: "1400hrs",
-        address: "Vancouver Provincial Court: Court Room 307 - 222 Main Street, Vancouver, BC V6A 2S8",
-        note: "This court covers Vancouver and Burnaby."
-      };
-    } else if (city === "vancouver" && caseType === "youth") {
-      courtDetails = {
-        time: "0930hrs",
-        address: "Vancouver Provincial Court: Court Room 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
-        note: "This court covers Vancouver and Burnaby."
-      };
-    } else if (city === "burnaby" && caseType === "adult") {
-      courtDetails = {
-        time: "1400hrs", // Updated from 1330hrs per Excel sheet
-        address: "Vancouver Provincial Court: Court Room 307 - 222 Main Street, Vancouver, BC V6A 2S8",
-        note: "This court covers Vancouver and Burnaby."
-      };
-    } else if (city === "burnaby" && caseType === "youth") {
-      courtDetails = {
-        time: "0930hrs",
-        address: "Vancouver Provincial Court: Court Room 101 - 800 Hornby Street, Vancouver, BC V6Z 2C5",
-        note: "This court covers Vancouver and Burnaby."
-      };
-    } else if (city === "surrey" && caseType === "adult") {
-      courtDetails = {
-        time: "1400hrs", // Updated from 0900hrs per Excel sheet
-        address: "Surrey Provincial Court: Court Room 100 - 14340 57th Ave, Surrey, BC V3X 1B2",
-        note: "This court covers Surrey, Delta, Langley & White Rock."
-      };
-    } else if (city === "surrey" && caseType === "youth") {
-      courtDetails = {
-        time: "1400hrs", // Updated from 0930hrs per Excel sheet
-        address: "Surrey Provincial Court: Court Room 312 - 14340 57th Ave, Surrey, BC V3X 1B2",
-        note: "This court covers Surrey, Delta, Langley & White Rock."
-      };
-    } else if (city === "new-westminster") {
-      courtDetails = {
-        time: "1000hrs", // Updated from 0900hrs per Excel sheet
-        address: "New Westminster Law Courts: Court Room 213 - 651 Carnarvon Street, New Westminster, BC V3M 1C9",
-      };
-    } else if (city === "coquitlam") {
-      courtDetails = {
-        time: "0900hrs", // Updated from 1400hrs per Excel sheet
-        address: "Port Coquitlam Provincial Court: Court Room 3 - 2620 Mary Hill Rd, Port Coquitlam, BC V3C 3B2",
-        note: "This court covers Coquitlam, Port Coquitlam, Port Moody, Pitt Meadows & Maple Ridge."
-      };
-    } else if (city === "north-vancouver") {
-      courtDetails = {
-        time: "0900hrs",
-        address: "North Vancouver Provincial Court: Court Room 3 - 200 E 23rd Street, North Vancouver, BC V7L 4R4",
-        note: "This court covers North Vancouver, West Vancouver, Squamish & Whistler."
-      };
-    } else {
-      courtDetails = {
-        time: "0900hrs",
-        address: `${city.charAt(0).toUpperCase() + city.slice(1)} Provincial Court`,
-        note: "Please verify court room details."
-      };
-    }
+    
+    courtDetails.note = richmondNote;
   }
 
-  const days = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  // Prepare fingerprint details
+  const fingerprintDetails = {
+    time: fingerprintResult.time,
+    location: fingerprintResult.location,
+    isHoliday: fingerprintResult.isHoliday,
+    daysBefore: fingerprintResult.daysBefore
+  };
+
+  // Create copy text
+  const copyText = createCopyText(courtDate, fingerprintResult, courtDetails, fingerprintDetails);
+  fingerprintDetails.copyText = copyText;
+
+  displayResults(courtDate, fingerprintResult.date, courtDetails, fingerprintDetails);
+}
+
+/**
+ * Calculate court date based on court configuration
+ */
+function calculateCourtDate(city, caseType, initial, weeksOut, courtConfig) {
+  const today = new Date();
+  const targetDate = new Date(today.getTime() + (weeksOut * 7 * 24 * 60 * 60 * 1000));
+  let courtDate;
+
+  switch (courtConfig.dayType) {
+    case "calendar":
+      // Richmond uses specific calendar dates
+      const nameGroup = /^[A-K]$/i.test(initial) ? "A-K" : "L-Z";
+      courtDate = findClosestDate(weeksOut, richmondCourtDates[nameGroup]);
+      break;
+
+    case "fixed":
+      // Fixed day of week (e.g., always Wednesday)
+      courtDate = getNextWeekday(targetDate, courtConfig.fixedDay);
+      break;
+
+    case "surname":
+      // Day based on surname letter
+      const dayOfWeek = getSurnameDay(initial, courtConfig.dayRules);
+      courtDate = getNextWeekday(targetDate, dayOfWeek);
+      break;
+
+    case "flexible":
+      // Multiple possible days - choose closest to target
+      courtDate = getClosestWeekday(targetDate, courtConfig.possibleDays);
+      break;
+
+    default:
+      // Fallback - use target date if it's a weekday, otherwise next Monday
+      courtDate = new Date(targetDate);
+      if (courtDate.getDay() === 0 || courtDate.getDay() === 6) {
+        courtDate = getNextWeekday(courtDate, 1); // Next Monday
+      }
+  }
+
+  // Handle holidays
+  courtDate = handleHolidays(courtDate, courtConfig);
+
+  return courtDate;
+}
+
+/**
+ * Handle court dates that fall on holidays
+ */
+function handleHolidays(courtDate, courtConfig) {
+  let adjustedDate = new Date(courtDate);
+  
+  while (isHoliday(adjustedDate)) {
+    if (courtConfig.dayType === "calendar") {
+      // For calendar-based (Richmond), move to next week's date
+      adjustedDate.setDate(adjustedDate.getDate() + 7);
+    } else if (courtConfig.dayType === "fixed") {
+      // For fixed day, move to next week
+      adjustedDate.setDate(adjustedDate.getDate() + 7);
+    } else if (courtConfig.dayType === "surname") {
+      // For surname-based, move to next week same day
+      adjustedDate.setDate(adjustedDate.getDate() + 7);
+    } else if (courtConfig.dayType === "flexible") {
+      // For flexible scheduling, try next available day
+      adjustedDate = getNextAvailableDay(adjustedDate, courtConfig.possibleDays);
+    }
+  }
+  
+  return adjustedDate;
+}
+
+/**
+ * Get next available day that's not a holiday
+ */
+function getNextAvailableDay(currentDate, possibleDays) {
+  let testDate = new Date(currentDate);
+  
+  // Try next 14 days to find a non-holiday day that's in possibleDays
+  for (let i = 1; i <= 14; i++) {
+    testDate.setDate(currentDate.getDate() + i);
+    if (possibleDays.includes(testDate.getDay()) && !isHoliday(testDate)) {
+      return new Date(testDate);
+    }
+  }
+  
+  // Fallback - just add 7 days
+  return new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+}
+
+/**
+ * Create copy/paste text
+ */
+function createCopyText(courtDate, fingerprintResult, courtDetails, fingerprintDetails) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   const courtDay = days[courtDate.getDay()];
   const courtMonth = months[courtDate.getMonth()];
   const courtDayNum = courtDate.getDate();
   const courtYear = courtDate.getFullYear();
 
-  const fpDay = days[fingerprintDate.getDay()];
-  const fpMonth = months[fingerprintDate.getMonth()];
-  const fpDayNum = fingerprintDate.getDate();
-  const fpYear = fingerprintDate.getFullYear();
+  const fpDay = days[fingerprintResult.date.getDay()];
+  const fpMonth = months[fingerprintResult.date.getMonth()];
+  const fpDayNum = fingerprintResult.date.getDate();
+  const fpYear = fingerprintResult.date.getFullYear();
 
   let copyText = `Court date: ${courtDay} ${courtMonth} ${courtDayNum} ${courtYear} at ${courtDetails.time} - ${courtDetails.address}`;
-  
-  copyText += ` // Fingerprint date: ${fpDay} ${fpMonth} ${fpDayNum} ${fpYear} at ${fingerprintTime} - ${fingerprintInfo.location}`;
+  copyText += ` // Fingerprint date: ${fpDay} ${fpMonth} ${fpDayNum} ${fpYear} at ${fingerprintResult.time} - ${fingerprintResult.location}`;
 
-  // Add holiday note to copy text if applicable
-  if (fpIsHoliday) {
+  // Add holiday warning if applicable
+  if (fingerprintDetails.isHoliday) {
     copyText += ` (HOLIDAY DATE - verify availability)`;
   }
 
-  const fingerprintDetails = {
-    time: fingerprintTime,
-    location: fingerprintInfo.location,
-    squadInfo: squadInfo,
-    reasonText: reasonText,
-    isMatchingSquad: isMatchingSquad,
-    isHoliday: fpIsHoliday,
-    daysBefore: daysBeforeText,
-    copyText: copyText
-  };
-
-  displayResults(courtDate, fingerprintDate, courtDetails, fingerprintDetails);
+  return copyText;
 }
 
 /**
@@ -370,6 +237,7 @@ function loadOperatorNotes() {
   document.getElementById("operator-notes-textarea").value = notes;
 }
 
+// Initialize when page loads
 document.addEventListener("DOMContentLoaded", function() {
   document.getElementById("case-type").addEventListener("change", toggleInitialField);
   document.getElementById("city").addEventListener("change", toggleInitialField);
