@@ -134,19 +134,19 @@ function calculateCourtDate(city, caseType, initial, weeksOut, courtConfig) {
       }
   }
 
-  // Handle holidays
-  courtDate = handleHolidays(courtDate, courtConfig);
+  // Handle holidays and court closures
+  courtDate = handleHolidays(courtDate, courtConfig, city);
 
   return courtDate;
 }
 
 /**
- * Handle court dates that fall on holidays
+ * Handle court dates that fall on holidays or court closures
  */
-function handleHolidays(courtDate, courtConfig) {
+function handleHolidays(courtDate, courtConfig, city) {
   let adjustedDate = new Date(courtDate);
-  
-  while (isHoliday(adjustedDate)) {
+
+  while (isHoliday(adjustedDate) || isCourtClosure(adjustedDate, city)) {
     if (courtConfig.dayType === "calendar") {
       // For calendar-based (Richmond), move to next week's date
       adjustedDate.setDate(adjustedDate.getDate() + 7);
@@ -158,27 +158,27 @@ function handleHolidays(courtDate, courtConfig) {
       adjustedDate.setDate(adjustedDate.getDate() + 7);
     } else if (courtConfig.dayType === "flexible") {
       // For flexible scheduling, try next available day
-      adjustedDate = getNextAvailableDay(adjustedDate, courtConfig.possibleDays);
+      adjustedDate = getNextAvailableDay(adjustedDate, courtConfig.possibleDays, city);
     }
   }
-  
+
   return adjustedDate;
 }
 
 /**
- * Get next available day that's not a holiday
+ * Get next available day that's not a holiday or court closure
  */
-function getNextAvailableDay(currentDate, possibleDays) {
+function getNextAvailableDay(currentDate, possibleDays, city) {
   let testDate = new Date(currentDate);
-  
-  // Try next 14 days to find a non-holiday day that's in possibleDays
+
+  // Try next 14 days to find a non-holiday, non-closure day that's in possibleDays
   for (let i = 1; i <= 14; i++) {
     testDate.setDate(currentDate.getDate() + i);
-    if (possibleDays.includes(testDate.getDay()) && !isHoliday(testDate)) {
+    if (possibleDays.includes(testDate.getDay()) && !isHoliday(testDate) && !isCourtClosure(testDate, city)) {
       return new Date(testDate);
     }
   }
-  
+
   // Fallback - just add 7 days
   return new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
 }

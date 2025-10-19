@@ -19,6 +19,38 @@ function isHoliday(date) {
 }
 
 /**
+ * Check if a date is a court closure date (general or city-specific)
+ * @param {Date} date - Date to check
+ * @param {string} city - City name (optional, for city-specific closures)
+ * @returns {boolean} True if the date is a court closure
+ */
+function isCourtClosure(date, city = null) {
+  // Check general court closure dates (applies to all cities)
+  const isGeneralClosure = courtClosureDates.some(
+    (closure) =>
+      closure.getDate() === date.getDate() &&
+      closure.getMonth() === date.getMonth() &&
+      closure.getFullYear() === date.getFullYear()
+  );
+
+  if (isGeneralClosure) {
+    return true;
+  }
+
+  // Check city-specific closures if city is provided
+  if (city && citySpecificClosures[city]) {
+    return citySpecificClosures[city].some(
+      (closure) =>
+        closure.getDate() === date.getDate() &&
+        closure.getMonth() === date.getMonth() &&
+        closure.getFullYear() === date.getFullYear()
+    );
+  }
+
+  return false;
+}
+
+/**
  * Check if a date is a weekend
  * @param {Date} date - Date to check
  * @returns {boolean} True if the date is a weekend
