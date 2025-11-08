@@ -169,14 +169,14 @@ function getSurnameDay(initial, dayRules) {
 }
 
 /**
- * Simplified fingerprint date calculation
+ * Simplified fingerprint date calculation with holiday avoidance
  * @param {Date} courtDate - Court date
  * @param {string} issuingSquad - Issuing squad (A, B, C, or D)
  * @returns {Object} Fingerprint date information
  */
 function calculateFingerprintDate(courtDate, issuingSquad) {
   const courtDay = courtDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-  
+
   // Determine target fingerprint day based on court day
   let targetFingerprintDay;
   if (courtDay >= 1 && courtDay <= 3) { // Mon, Tue, Wed
@@ -189,28 +189,36 @@ function calculateFingerprintDate(courtDate, issuingSquad) {
     // Weekend court (shouldn't happen, but fallback to Thursday)
     targetFingerprintDay = 4;
   }
-  
-  // Find the appropriate fingerprint date before court
+
+  // Find the appropriate fingerprint date before court, avoiding holidays
   let fingerprintDate = new Date(courtDate);
-  let attempts = 0;
-  
-  while (attempts < 30) { // Safety limit to prevent infinite loop
+  let weeksBack = 0;
+  const maxWeeks = 8; // Check up to 8 weeks back
+
+  while (weeksBack < maxWeeks) {
+    // Go back one day at a time to find the target weekday
     fingerprintDate.setDate(fingerprintDate.getDate() - 1);
-    attempts++;
-    
+
     if (fingerprintDate.getDay() === targetFingerprintDay) {
-      // Check if it's at least 2 days before court and not a holiday
+      // Found a matching weekday, check if it meets all requirements
       const daysDiff = Math.floor((courtDate - fingerprintDate) / (24 * 60 * 60 * 1000));
-      if (daysDiff >= 2 && !isHoliday(fingerprintDate)) {
+
+      // Must be at least 2 days before court, not a weekend, and not a holiday
+      if (daysDiff >= 2 && !isWeekend(fingerprintDate) && !isHoliday(fingerprintDate)) {
+        // Found a valid date
         break;
       }
+
+      // If this occurrence doesn't work (e.g., it's a holiday),
+      // continue the loop to find the previous week's occurrence
+      weeksBack++;
     }
   }
-  
+
   // Determine time based on squad
   const isNightSquad = issuingSquad === "B" || issuingSquad === "D";
   const fingerprintTime = isNightSquad ? "1800hrs" : "0900hrs";
-  
+
   return {
     date: fingerprintDate,
     time: fingerprintTime,
