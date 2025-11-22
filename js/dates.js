@@ -1,7 +1,11 @@
 /**
- * dates.js - Contains simplified date calculation functions
+ * dates.js - Contains date calculation functions
  * This file handles all date manipulation for court and fingerprint dates.
- * Streamlined fingerprint calculation based on clear requirements.
+ *
+ * Fingerprint Rules:
+ * - Fingerprints are scheduled 1 business day prior to court date
+ * - Valid fingerprint days: Monday-Friday (excluding holidays)
+ * - Time: 0900hrs for squads A/C, 1800hrs for squads B/D
  */
 
 /**
@@ -169,48 +173,35 @@ function getSurnameDay(initial, dayRules) {
 }
 
 /**
- * Simplified fingerprint date calculation
+ * Fingerprint date calculation - 1 business day prior to court
+ * Prints can happen Monday-Friday at 0900hrs or 1800hrs depending on squad.
  * @param {Date} courtDate - Court date
  * @param {string} issuingSquad - Issuing squad (A, B, C, or D)
  * @returns {Object} Fingerprint date information
  */
 function calculateFingerprintDate(courtDate, issuingSquad) {
-  const courtDay = courtDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-  
-  // Determine target fingerprint day based on court day
-  let targetFingerprintDay;
-  if (courtDay >= 1 && courtDay <= 3) { // Mon, Tue, Wed
-    targetFingerprintDay = 4; // Thursday
-  } else if (courtDay === 4) { // Thursday
-    targetFingerprintDay = 2; // Tuesday
-  } else if (courtDay === 5) { // Friday
-    targetFingerprintDay = 3; // Wednesday
-  } else {
-    // Weekend court (shouldn't happen, but fallback to Thursday)
-    targetFingerprintDay = 4;
-  }
-  
-  // Find the appropriate fingerprint date before court
+  // Find 1 business day prior to court date
+  // Skip weekends and holidays
   let fingerprintDate = new Date(courtDate);
   let attempts = 0;
-  
+
   while (attempts < 30) { // Safety limit to prevent infinite loop
     fingerprintDate.setDate(fingerprintDate.getDate() - 1);
     attempts++;
-    
-    if (fingerprintDate.getDay() === targetFingerprintDay) {
-      // Check if it's at least 2 days before court and not a holiday
-      const daysDiff = Math.floor((courtDate - fingerprintDate) / (24 * 60 * 60 * 1000));
-      if (daysDiff >= 2 && !isHoliday(fingerprintDate)) {
-        break;
-      }
+
+    // Check if it's a valid business day (Monday-Friday, not a holiday)
+    const dayOfWeek = fingerprintDate.getDay();
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
+
+    if (isWeekday && !isHoliday(fingerprintDate)) {
+      break; // Found a valid business day
     }
   }
-  
+
   // Determine time based on squad
   const isNightSquad = issuingSquad === "B" || issuingSquad === "D";
   const fingerprintTime = isNightSquad ? "1800hrs" : "0900hrs";
-  
+
   return {
     date: fingerprintDate,
     time: fingerprintTime,
@@ -233,12 +224,13 @@ function findBestFingerprintDate(courtDate, issuingSquad) {
 
 /**
  * Check if a date is a valid fingerprint day
+ * Fingerprints can happen Monday-Friday, excluding holidays.
  * @param {Date} date - Date to check
  * @returns {boolean} True if the date is a valid fingerprint day
  */
 function isValidFingerprintDay(date) {
   const day = date.getDay();
-  return day >= 2 && day <= 4; // Tuesday (2), Wednesday (3), Thursday (4)
+  return day >= 1 && day <= 5 && !isHoliday(date); // Monday (1) to Friday (5), not a holiday
 }
 
 /**
