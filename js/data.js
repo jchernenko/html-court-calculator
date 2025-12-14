@@ -248,12 +248,12 @@ const courtInfo = {
     adult: {
       time: "1400hrs",
       address: "Surrey Provincial Court: Courtroom 100 - 14340 57th Ave, Surrey, BC V3X 1B2",
-      dayType: "flexible", 
-      possibleDays: [1, 2, 3, 4, 5], 
+      dayType: "flexible",
+      possibleDays: [1, 2, 3, 4, 5],
       note: "This court covers Surrey, Delta, Langley & White Rock."
     },
     youth: {
-      time: "1400hrs",
+      time: "0930hrs",
       address: "Surrey Provincial Court: Courtroom 312 - 14340 57th Ave, Surrey, BC V3X 1B2",
       dayType: "fixed",
       fixedDay: 3, // Wednesday
